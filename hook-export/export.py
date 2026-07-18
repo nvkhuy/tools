@@ -193,7 +193,12 @@ def main():
         
     # 5. Process hooks in parallel
     cpu_count = os.cpu_count() or 4
-    max_workers = min(4, cpu_count)
+    if encoder == "hevc_videotoolbox":
+        # Hardware accelerated encoder can run more concurrent jobs without CPU thrashing
+        max_workers = cpu_count
+    else:
+        # Software encoder fallback works best with fewer workers to prevent thrashing
+        max_workers = min(4, cpu_count)
     
     # Allow overriding max workers via environment variable
     env_workers = os.environ.get("NUM_WORKERS")
