@@ -42,6 +42,24 @@ If creating multiple ads, produce 5 variants with the SAME core motion spine and
 - Strange or unusual visual hook
 - Urgency, danger, frustration, or ASMR satisfaction
 
+## Technical rendering & export requirements
+
+To prevent encoding glitches, frame stutters, audio desync, and timestamp errors:
+
+1. **Single-pass filter pipeline (avoid multi-clip `concat` splicing)**:
+   - Process timing adjustments, speed curves (`setpts`/`atempo`), and freeze-frame holds (`tpad`/`apad`) within a **single-pass FFmpeg filtergraph**.
+   - Do NOT cut a continuous recording into separate intermediate H.264 clips and re-concatenate them with `-f concat -c copy`. Intermediate concats cause non-monotonic DTS/PTS timestamp jumps, keyframe seek glitches, and audio stuttering.
+
+2. **Smooth transitions between different clips (`xfade` / `acrossfade`)**:
+   - When transitioning between different source recordings (e.g. tutorial clip to main gameplay level), use explicit video and audio crossfade filters (`xfade=transition=fade:duration=0.3` and `acrossfade=d=0.3`) rather than abrupt unaligned cuts.
+
+3. **Symmetric Audio-Visual Padding**:
+   - When holding or freezing frames at key cliffhanger/ending moments (`tpad`), always pad audio symmetrically (`apad`) within the same graph to maintain 100% video-audio synchronization.
+
+4. **Strict Format & Quality Specs**:
+   - **Resolution & Aspect**: 1080 × 1350 (4:5 portrait, SAR 1:1, padded with color `#7FBCF5`).
+   - **Framerate & Encoding**: 60 FPS (`-r 60`), H.264 High Profile (`-crf 17`, `-preset fast`), AAC Stereo Audio (48 kHz).
+
 ## Final quality check
 
 Before rendering, verify:
@@ -52,3 +70,4 @@ Before rendering, verify:
 - Does the tension or satisfaction increase over time?
 - Is the ending tempting enough to continue watching or playing?
 - Does the final ad look like the actual game at its best?
+- Is the video stream free of DTS timestamp warnings, keyframe seek jumps, and frame stutters?
